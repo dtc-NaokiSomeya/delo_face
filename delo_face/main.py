@@ -5,7 +5,7 @@ import csv
 import os
 from halo import Halo
 
-FONT_SIZE = 24
+FONT_SIZE = 30
 rek = boto3.client("rekognition", region_name='ap-northeast-1')
 
 EMOTIONS = [
@@ -16,7 +16,7 @@ EMOTIONS = [
     'DISGUSTED',
     'SURPRISED',
     'CALM',
-    'UNKNOWN',
+    # 'UNKNOWN',
     'FEAR'
 ]
 
@@ -38,7 +38,7 @@ def main(input_image, output_csv, result_img):
                 result_filename = no_ext_name + "_" + result_img
  
             with open(csv_filename, "w", newline='') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=['NO', 'IS_SMILE', 'SMILE_CONFIDENTIAL'] + EMOTIONS)
+                writer = csv.DictWriter(csvfile, fieldnames=['NO', 'IS_SMILE', 'SMILE_CONFIDENTIAL'] + EMOTIONS + ['SCORE', 'TOTAL'] )
                 writer.writeheader()
                 spinner = Halo(text='AWS Rekognitionで顔画像を解析しています...', spinner='dots')
                 spinner.start()
@@ -48,6 +48,7 @@ def main(input_image, output_csv, result_img):
                 im = Image.open(input_image)
                 font = ImageFont.truetype("Arial.ttf", FONT_SIZE)
                 width, height = im.size
+                sum_score = 0.0
                 for index, face in enumerate(faces["FaceDetails"]):
                     csv_row_dict = {}
                     csv_row_dict['NO'] = index+1
@@ -60,9 +61,19 @@ def main(input_image, output_csv, result_img):
                     top = height * face["BoundingBox"]["Top"]
                     fw = width * face["BoundingBox"]["Width"]
                     fh = height * face["BoundingBox"]["Height"]
-                    dr.rectangle((left, top, left+fw, top+fh ), outline=(255, 0, 0))
-                    dr.text((left, top), "No.{}".format(index+1), fill=(255, 0, 0), font=font)
+                    if csv_row_dict['IS_SMILE']:
+                        sum_score += float(csv_row_dict['SMILE_CONFIDENTIAL'])
+                        dr.rectangle((left, top, left+fw, top+fh ), outline=(255, 0, 0))
+                        dr.text((left, top), "{}".format(index+1), fill=(255, 0, 0), font=font)
+                    else:
+                        dr.rectangle((left, top, left+fw, top+fh ), outline=(0, 255, 0))
+                        dr.text((left, top), "{}".format(index+1), fill=(0, 255, 0), font=font)
+
                     writer.writerow(csv_row_dict)
+
+                face_num = float(len(faces["FaceDetails"]))
+                print('結果: {} ({} / {})'.format( sum_score/face_num, sum_score, face_num))
+                writer.writerow({'SCORE': sum_score/face_num, 'TOTAL': sum_score})
                 im.save(result_filename, quolity=100)
 
     except FileNotFoundError as err:
