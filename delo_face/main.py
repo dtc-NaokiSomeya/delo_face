@@ -63,11 +63,11 @@ def main(input_image, output_csv, result_img):
                     fh = height * face["BoundingBox"]["Height"]
                     if csv_row_dict['IS_SMILE']:
                         sum_score += float(csv_row_dict['SMILE_CONFIDENTIAL'])
-                        dr.rectangle((left, top, left+fw, top+fh ), outline=(255, 0, 0))
-                        dr.text((left, top), "{}".format(index+1), fill=(255, 0, 0), font=font)
-                    else:
                         dr.rectangle((left, top, left+fw, top+fh ), outline=(0, 255, 0))
                         dr.text((left, top), "{}".format(index+1), fill=(0, 255, 0), font=font)
+                    else:
+                        dr.rectangle((left, top, left+fw, top+fh ), outline=(255, 0, 0))
+                        dr.text((left, top), "{}".format(index+1), fill=(255, 0, 0), font=font)
 
                     writer.writerow(csv_row_dict)
 
